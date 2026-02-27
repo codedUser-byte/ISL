@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../components/GlobalNavbar.dart'; // Import your new component
 import 'TranslateScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (renderObject is RenderBox) {
       final position = renderObject.localToGlobal(Offset.zero).dy;
       final screenHeight = MediaQuery.of(context).size.height;
+      // Triggers animation when the stats section is 80% visible
       if (position < screenHeight * 0.8) {
         setState(() => _statsVisible = true);
       }
@@ -43,11 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final bool isWeb = MediaQuery.of(context).size.width > 900;
     final theme = Theme.of(context);
+    const primaryIndigo = Color(0xFF6366F1);
 
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(top: -100, left: -100, child: _BlurCircle(color: const Color(0xFF6366F1).withOpacity(0.12))),
+          // Background Aesthetic Blurs
+          Positioned(top: -100, left: -100, child: _BlurCircle(color: primaryIndigo.withOpacity(0.12))),
           Positioned(bottom: -150, right: -50, child: _BlurCircle(color: Colors.blue.withOpacity(0.1))),
           
           SafeArea(
@@ -56,21 +60,23 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  _buildNavbar(context),
+                  // Use the Reusable Global Navbar
+                  GlobalNavbar(toggleTheme: widget.toggleTheme, activeRoute: 'home'),
+                  
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: isWeb ? 100 : 24),
                     child: Column(
                       children: [
                         const SizedBox(height: 60),
-                        _buildBadge(),
+                        _buildBadge(primaryIndigo),
                         const SizedBox(height: 30),
-                        _buildHeroSection(isWeb, theme, context),
+                        _buildHeroSection(isWeb, theme, context, primaryIndigo),
                         const SizedBox(height: 100),
-                        Container(key: _statsKey, child: _buildStatsBar(isWeb, _statsVisible)),
+                        Container(key: _statsKey, child: _buildStatsBar(isWeb, _statsVisible, primaryIndigo)),
                         const SizedBox(height: 120),
-                        _buildObjectivesSection(isWeb), // Updated with 6 items
+                        _buildObjectivesSection(isWeb, primaryIndigo),
                         const SizedBox(height: 100),
-                        _buildSocialVision(context),
+                        _buildSocialVision(primaryIndigo),
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -84,66 +90,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavbar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 25),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text("VANI", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Color(0xFF6366F1), letterSpacing: 1.8)),
-          Row(
-            children: [
-              if (MediaQuery.of(context).size.width > 750) ...[
-                const _NavLink(label: "Home", isActive: true),
-                _NavLink(
-                  label: "Translate", 
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TranslateScreen())),
-                ),
-                const _NavLink(label: "Models"),
-              ],
-              const SizedBox(width: 20),
-              IconButton(
-                onPressed: widget.toggleTheme, 
-                icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 22)
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // --- UI Builder Methods ---
 
-  Widget _buildBadge() {
+  Widget _buildBadge(Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF6366F1).withOpacity(0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.15)),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bolt_rounded, size: 16, color: Color(0xFF6366F1)),
-          SizedBox(width: 8),
-          Text("Vani Vision — 16k Dataset Trained", style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 13)),
+          Icon(Icons.bolt_rounded, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text("Vani Vision — 16k Dataset Trained", 
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
   }
 
-  Widget _buildHeroSection(bool isWeb, ThemeData theme, BuildContext context) {
+  Widget _buildHeroSection(bool isWeb, ThemeData theme, BuildContext context, Color primary) {
     return Column(
       children: [
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
-            style: TextStyle(fontSize: isWeb ? 72 : 40, fontWeight: FontWeight.w900, color: theme.textTheme.bodyLarge?.color, height: 1.1, letterSpacing: -1),
-            children: const [
-              TextSpan(text: "Convert "),
-              TextSpan(text: "Indian Sign Language ", style: TextStyle(color: Color(0xFF6366F1))),
-              TextSpan(text: "To\nText In Real-Time"),
+            style: TextStyle(
+              fontSize: isWeb ? 72 : 40, 
+              fontWeight: FontWeight.w900, 
+              color: theme.brightness == Brightness.dark ? Colors.white : Colors.black, 
+              height: 1.1, 
+              letterSpacing: -1
+            ),
+            children: [
+              const TextSpan(text: "Convert "),
+              TextSpan(text: "Indian Sign Language ", style: TextStyle(color: primary)),
+              const TextSpan(text: "To\nText In Real-Time"),
             ],
           ),
         ),
@@ -155,12 +140,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 50),
         ElevatedButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TranslateScreen())),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => TranslateScreen(toggleTheme: widget.toggleTheme))),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 45, vertical: 25),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            elevation: 0,
           ),
           child: const Text("Get Started", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
@@ -168,23 +154,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatsBar(bool isWeb, bool isVisible) {
+  Widget _buildStatsBar(bool isWeb, bool isVisible, Color primary) {
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: isWeb ? 120 : 40,
       runSpacing: 40,
       children: [
-        _StatItem(label: "Deaf and Mute People in India", value: "63000000", isVisible: isVisible),
-        _StatItem(label: "ISL Users", value: "8435000", isVisible: isVisible),
-        _StatItem(label: "Professional Translators", value: "250", isVisible: isVisible),
+        _StatItem(label: "Mute People in India", value: "63000000", isVisible: isVisible, color: primary),
+        _StatItem(label: "ISL Users", value: "8435000", isVisible: isVisible, color: primary),
+        _StatItem(label: "Professional Translators", value: "250", isVisible: isVisible, color: primary),
       ],
     );
   }
 
-  Widget _buildObjectivesSection(bool isWeb) {
+  Widget _buildObjectivesSection(bool isWeb, Color primary) {
     return Column(
       children: [
-        const Text("Our Objectives", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF6366F1))),
+        Text("Our Objectives", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: primary)),
         const SizedBox(height: 50),
         GridView.count(
           shrinkWrap: true,
@@ -192,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisCount: isWeb ? 3 : 1,
           mainAxisSpacing: 25,
           crossAxisSpacing: 25,
-          childAspectRatio: isWeb ? 1.5 : 2.2, // Adjusted for content
+          childAspectRatio: isWeb ? 1.5 : 2.2,
           children: const [
             _ObjectiveCard(title: "Accessibility", desc: "Communication for all", icon: Icons.accessibility_new_rounded),
             _ObjectiveCard(title: "Bridging Gaps", desc: "Connecting communities", icon: Icons.loop_rounded),
@@ -206,14 +192,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSocialVision(BuildContext context) {
+  Widget _buildSocialVision(Color primary) {
     return GlassCard(
       child: Column(
         children: [
-          const Icon(Icons.favorite_rounded, color: Color(0xFF6366F1), size: 30),
+          Icon(Icons.favorite_rounded, color: primary, size: 30),
           const SizedBox(height: 20),
-          const Text("Empowering Silence with Vani AI", 
-            style: TextStyle(fontSize: 22, color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+          Text("Empowering Silence with Vani AI", 
+            style: TextStyle(fontSize: 22, color: primary, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           const Text(
             "With only 1 translator for every 33,000 users in India, Vani provides a digital bridge for independent communication.",
@@ -226,11 +212,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// --- STATS COMPONENT REMAINS SAME ---
+// --- Internal Helper Components ---
+
 class _StatItem extends StatefulWidget {
   final String label, value;
   final bool isVisible;
-  const _StatItem({required this.label, required this.value, required this.isVisible});
+  final Color color;
+  const _StatItem({required this.label, required this.value, required this.isVisible, required this.color});
 
   @override
   State<_StatItem> createState() => _StatItemState();
@@ -276,7 +264,7 @@ class _StatItemState extends State<_StatItem> with SingleTickerProviderStateMixi
           children: [
             Text(
               _formatNumber(_animation.value.toInt()),
-              style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Color(0xFF6366F1), letterSpacing: -1),
+              style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: widget.color, letterSpacing: -1),
             ),
             const SizedBox(height: 12),
             Text(widget.label, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey, fontSize: 15)),
@@ -287,35 +275,6 @@ class _StatItemState extends State<_StatItem> with SingleTickerProviderStateMixi
   }
 }
 
-// --- UPDATED NAVLINK WITH CALLBACK ---
-class _NavLink extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback? onTap;
-  const _NavLink({required this.label, this.isActive = false, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        child: Text(
-          label, 
-          style: TextStyle(
-            color: isActive ? const Color(0xFF6366F1) : (isDark ? Colors.white70 : Colors.grey[600]), 
-            fontWeight: isActive ? FontWeight.w800 : FontWeight.w500, 
-            fontSize: 15
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- REST OF HELPERS (GlassCard, ObjectiveCard, BlurCircle) REMAIN SAME ---
 class _ObjectiveCard extends StatelessWidget {
   final String title, desc;
   final IconData icon;

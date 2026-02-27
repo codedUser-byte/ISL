@@ -1,9 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart'; // Required for kIsWeb
+import '../components/GlobalNavbar.dart';
 
 class TranslateScreen extends StatefulWidget {
-  const TranslateScreen({super.key});
+  final VoidCallback toggleTheme; // Added to maintain theme state
+  const TranslateScreen({super.key, required this.toggleTheme});
 
   @override
   State<TranslateScreen> createState() => _TranslateScreenState();
@@ -14,6 +17,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   int _selectedCameraIndex = 0;
+  final TextEditingController _textController = TextEditingController();
 
   @override
   void initState() {
@@ -37,10 +41,12 @@ class _TranslateScreenState extends State<TranslateScreen> {
           _cameras![_selectedCameraIndex],
           ResolutionPreset.high,
           enableAudio: false,
+          imageFormatGroup: kIsWeb ? ImageFormatGroup.unknown : ImageFormatGroup.jpeg,
         );
 
         try {
           await _controller!.initialize();
+          if (!mounted) return; // Fix: Check if widget is still in tree
           setState(() => isCameraOn = true);
         } catch (e) {
           debugPrint("Camera error: $e");
@@ -48,6 +54,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
       }
     } else {
       await _controller?.dispose();
+      if (!mounted) return;
       setState(() {
         isCameraOn = false;
         _controller = null;
@@ -67,6 +74,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
@@ -86,28 +94,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     const primaryColor = Color(0xFF6366F1);
 
     return Scaffold(
-      // BACKGROUND ADAPTS TO THEME
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, 
-            color: isDark ? Colors.white : primaryColor, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        // MIRRORED HOMEPAGE APPBAR
-        backgroundColor: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-        title: const Text("VANI CORE", 
-          style: TextStyle(fontWeight: FontWeight.w900, color: primaryColor, letterSpacing: 3, fontSize: 18)),
-        centerTitle: true,
-      ),
       body: Stack(
         children: [
           // Adaptive Background Glows
@@ -115,15 +102,27 @@ class _TranslateScreenState extends State<TranslateScreen> {
           Positioned(bottom: -150, right: -50, child: _BlurCircle(color: Colors.blue.withOpacity(isDark ? 0.12 : 0.08))),
           
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: isWeb ? _buildWebLayout(isDark) : _buildMobileLayout(isDark),
+            child: Column(
+              children: [
+                // Integrated Global Navbar
+                GlobalNavbar(toggleTheme: widget.toggleTheme, activeRoute: 'translate'),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    child: isWeb ? _buildWebLayout(isDark) : _buildMobileLayout(isDark),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  // --- Layout Builders ---
 
   Widget _buildWebLayout(bool isDark) {
     return Row(
@@ -163,6 +162,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
           const SizedBox(height: 15),
           Container(
             height: 440,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.circular(28),
@@ -173,6 +173,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(28),
               child: Stack(
+                fit: StackFit.expand, // Ensures camera fills the container
                 children: [
                   Center(
                     child: isCameraOn && _controller != null && _controller!.value.isInitialized
@@ -189,13 +190,12 @@ class _TranslateScreenState extends State<TranslateScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildActionButton(
-                isDark: isDark,
                 onPressed: _switchCamera, 
                 icon: Icons.flip_camera_android_rounded, 
                 label: "Switch",
               ),
               const SizedBox(width: 20),
-              _buildCameraToggle(isDark),
+              _buildCameraToggle(),
             ],
           ),
         ],
@@ -270,6 +270,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: isDark ? Colors.white54 : Colors.grey, letterSpacing: 1.5)),
           const SizedBox(height: 15),
           TextField(
+            controller: _textController,
             maxLines: 3,
             style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
@@ -285,13 +286,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
             children: [
               Expanded(child: _buildGradientButton("Start Capturing", Icons.play_arrow_rounded)),
               const SizedBox(width: 12),
-              _buildIconButton(isDark, Icons.delete_outline_rounded, Colors.redAccent),
+              _buildIconButton(Icons.delete_outline_rounded, Colors.redAccent, () => _textController.clear()),
             ],
           ),
         ],
       ),
     );
   }
+
+  // --- UI Components ---
 
   Widget _buildHeader(bool isDark, IconData icon, String title, String sub) {
     return Row(
@@ -323,12 +326,13 @@ class _TranslateScreenState extends State<TranslateScreen> {
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
       ),
     );
   }
 
-  Widget _buildActionButton({required bool isDark, required VoidCallback onPressed, required IconData icon, required String label}) {
+  Widget _buildActionButton({required VoidCallback onPressed, required IconData icon, required String label}) {
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
@@ -342,7 +346,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
-  Widget _buildCameraToggle(bool isDark) {
+  Widget _buildCameraToggle() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -363,20 +367,22 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
-  Widget _buildIconButton(bool isDark, IconData icon, Color color) {
+  Widget _buildIconButton(IconData icon, Color color, VoidCallback onTap) {
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(15),
       ),
       child: IconButton(
-        onPressed: () {},
+        onPressed: onTap,
         icon: Icon(icon, color: color),
         padding: const EdgeInsets.all(15),
       ),
     );
   }
 }
+
+// Keep your _BlurCircle, _GlassContainer, and _InstructionDialog classes here as they were...
 
 // --- SHARED CLASSES ---
 
