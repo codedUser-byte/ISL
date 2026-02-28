@@ -1,6 +1,9 @@
+//lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/AppLocalizations.dart';
 import 'screens/HomeScreen.dart';
-import 'screens/TranslateScreen.dart'; 
+import 'screens/TranslateScreen.dart';
 
 void main() => runApp(const VaniApp());
 
@@ -13,167 +16,72 @@ class VaniApp extends StatefulWidget {
 
 class _VaniAppState extends State<VaniApp> {
   ThemeMode _themeMode = ThemeMode.dark;
+  Locale _locale = const Locale('en');
 
   void toggleTheme() {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode =
+          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     });
   }
 
+  void setLocale(Locale locale) {
+    setState(() => _locale = locale);
+  }
+
   @override
   Widget build(BuildContext context) {
-    const primaryIndigo = Color(0xFF6366F1);
+    const accentIndigo = Color(0xFF6C63FF);
+    const deepBg = Color(0xFF06060F);
+    const surfaceCard = Color(0xFF0D0D1F);
 
     return MaterialApp(
-      title: 'Vani ISL',
+      title: 'Vani — Sign Language AI',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
-      
-      // LIGHT THEME CONFIG
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      // --- LIGHT THEME ---
       theme: ThemeData(
         brightness: Brightness.light,
-        primaryColor: primaryIndigo,
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        primaryColor: accentIndigo,
+        scaffoldBackgroundColor: const Color(0xFFF4F6FD),
         cardColor: Colors.white,
         colorScheme: const ColorScheme.light(
-          primary: primaryIndigo,
-          secondary: Color(0xFF0EA5E9),
-        ),
-        useMaterial3: true, // Modern Flutter look
-      ),
-
-      // DARK THEME CONFIG
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: primaryIndigo,
-        scaffoldBackgroundColor: const Color(0xFF020617),
-        cardColor: const Color(0xFF1E293B),
-        colorScheme: const ColorScheme.dark(
-          primary: primaryIndigo,
-          secondary: Color(0xFF10B981),
+          primary: accentIndigo,
+          secondary: Color(0xFF4F46E5),
+          surface: Colors.white,
+          onSurface: Color(0xFF0F0E2A),
         ),
         useMaterial3: true,
       ),
-      
-      // Set the Home Screen
-      home: HomeScreen(toggleTheme: toggleTheme),
-    );
-  }
-}
 
-// --- SHARED UI COMPONENTS ---
-
-class GlobalNavbar extends StatelessWidget {
-  final VoidCallback toggleTheme;
-  final String activeRoute;
-
-  const GlobalNavbar({super.key, required this.toggleTheme, required this.activeRoute});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).primaryColor;
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth > 900 ? 60 : 20, 
-        vertical: 25
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Logo
-          GestureDetector(
-            onTap: () {
-              if (activeRoute != 'home') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(toggleTheme: toggleTheme)));
-            },
-            child: Text(
-              "VANI",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: primary,
-                letterSpacing: 1.8,
-              ),
-            ),
-          ),
-
-          // Navigation Links
-          Row(
-            children: [
-              if (screenWidth > 750) ...[
-                _NavLink(
-                  label: "Home",
-                  isActive: activeRoute == 'home',
-                  onTap: () {
-                    if (activeRoute != 'home') {
-                      Navigator.pushAndRemoveUntil(
-                        context, 
-                        MaterialPageRoute(builder: (context) => HomeScreen(toggleTheme: toggleTheme)),
-                        (route) => false
-                      );
-                    }
-                  },
-                ),
-                _NavLink(
-                  label: "Translate",
-                  isActive: activeRoute == 'translate',
-                  onTap: () {
-                    if (activeRoute != 'translate') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => TranslateScreen(toggleTheme: toggleTheme))
-                      );
-                    }
-                  },
-                ),
-                const _NavLink(label: "Models"),
-              ],
-              const SizedBox(width: 10),
-              
-              // Theme Toggle
-              IconButton(
-                onPressed: toggleTheme,
-                icon: Icon(
-                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  size: 22,
-                  color: primary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavLink extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback? onTap;
-  const _NavLink({required this.label, this.isActive = false, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).primaryColor;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? primary : (isDark ? Colors.white70 : Colors.grey[600]),
-            fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-            fontSize: 15,
-          ),
+      // --- DARK THEME ---
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: accentIndigo,
+        scaffoldBackgroundColor: deepBg,
+        cardColor: surfaceCard,
+        canvasColor: deepBg,
+        dividerColor: Colors.white.withOpacity(0.04),
+        colorScheme: const ColorScheme.dark(
+          primary: accentIndigo,
+          secondary: Color(0xFF9D8FFF),
+          surface: surfaceCard,
+          onSurface: Color(0xFFEAE8FF),
+          background: deepBg,
         ),
+        useMaterial3: true,
       ),
+
+      home: HomeScreen(toggleTheme: toggleTheme, setLocale: setLocale),
     );
   }
 }
