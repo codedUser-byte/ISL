@@ -56,3 +56,4 @@ android/local.properties
 ios/Pods/
 isl_backend/.env
 .env
+isl_backend/model/
