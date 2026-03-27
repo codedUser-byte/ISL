@@ -13,6 +13,7 @@ dependencies:
 
   # ── existing ──────────────────────────────
   http: ^1.2.0
+  google_generative_ai: ^0.4.3
   camera: ^0.11.0+2
   cupertino_icons: ^1.0.8
   web_socket_channel: ^3.0.1
