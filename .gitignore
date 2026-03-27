@@ -54,3 +54,5 @@ app.*.map.json
 android/.gradle/
 android/local.properties
 ios/Pods/
+isl_backend/.env
+.env
