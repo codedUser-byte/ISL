@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -7,12 +8,18 @@ import 'l10n/AppLocalizations.dart';
 import 'models/EmergencyContact.dart';
 import 'services/EmergencyService.dart';
 import 'screens/HomeScreen.dart';
+import 'screens/SplashScreen.dart';
 import 'components/SOSFloatingButton.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Hive: local storage for emergency contacts ──
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor:            Colors.transparent,
+    statusBarIconBrightness:   Brightness.light,
+    statusBarBrightness:       Brightness.dark,
+  ));
+
   await Hive.initFlutter();
   Hive.registerAdapter(EmergencyContactAdapter());
   await Hive.openBox<EmergencyContact>('emergency_contacts');
@@ -22,38 +29,37 @@ void main() async {
 
 class VaniApp extends StatefulWidget {
   const VaniApp({super.key});
-
   @override
   State<VaniApp> createState() => _VaniAppState();
 }
 
 class _VaniAppState extends State<VaniApp> {
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;   // ← app starts in light mode
   Locale _locale = const Locale('en');
 
-  void toggleTheme() {
-    setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    });
-  }
+  void toggleTheme() => setState(() =>
+  _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
 
-  void setLocale(Locale locale) {
-    setState(() => _locale = locale);
-  }
+  void setLocale(Locale locale) => setState(() => _locale = locale);
 
   @override
   Widget build(BuildContext context) {
-    const accentIndigo = Color(0xFF6C63FF);
-    const deepBg = Color(0xFF06060F);
-    const surfaceCard = Color(0xFF0D0D1F);
+    const violet      = Color(0xFF7C3AED);
+    const violetLight = Color(0xFFA78BFA);
+    const dBg         = Color(0xFF040408);
+    const dSurface    = Color(0xFF0C0C16);
+    const lBg         = Color(0xFFF5F6FE);
+    const lSurface    = Color(0xFFFFFFFF);
+
+    // Bundled Google Sans font family from assets/fonts for exact cross-platform rendering.
+    const appFontFamily = 'Google Sans';
 
     return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).t('app_title'),
+      onGenerateTitle:            (context) => AppLocalizations.of(context).t('app_title'),
       debugShowCheckedModeBanner: false,
-      themeMode: _themeMode,
-      locale: _locale,
-      supportedLocales: AppLocalizations.supportedLocales,
+      themeMode:                  _themeMode,
+      locale:                     _locale,
+      supportedLocales:           AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -61,59 +67,69 @@ class _VaniAppState extends State<VaniApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      // ── Light theme (unchanged) ──
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: accentIndigo,
-        scaffoldBackgroundColor: const Color(0xFFF4F6FD),
-        cardColor: Colors.white,
-        colorScheme: const ColorScheme.light(
-          primary: accentIndigo,
-          secondary: Color(0xFF4F46E5),
-          surface: Colors.white,
-          onSurface: Color(0xFF0F0E2A),
-        ),
-        useMaterial3: true,
-      ),
-
-      // ── Dark theme (unchanged) ──
+      // ── Dark theme ──────────────────────────
       darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: accentIndigo,
-        scaffoldBackgroundColor: deepBg,
-        cardColor: surfaceCard,
-        canvasColor: deepBg,
-        dividerColor: Colors.white.withOpacity(0.04),
-        colorScheme: const ColorScheme.dark(
-          primary: accentIndigo,
-          secondary: Color(0xFF9D8FFF),
-          surface: surfaceCard,
-          onSurface: Color(0xFFEAE8FF),
+        brightness:              Brightness.dark,
+        useMaterial3:            true,
+        fontFamily:              appFontFamily,
+        primaryColor:            violet,
+        scaffoldBackgroundColor: dBg,
+        cardColor:               dSurface,
+        canvasColor:             dBg,
+        dividerColor:            Colors.white.withOpacity(0.05),
+        textTheme:               ThemeData.dark().textTheme,
+        colorScheme: ColorScheme.dark(
+          primary:   violet,
+          secondary: violetLight,
+          surface:   dSurface,
+          onSurface: const Color(0xFFF0EEFF),
+          outline:   Colors.white.withOpacity(0.08),
         ),
-        useMaterial3: true,
+        pageTransitionsTheme: const PageTransitionsTheme(builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS:     CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux:   FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS:   CupertinoPageTransitionsBuilder(),
+        }),
       ),
 
-      // ── Root is now _RootShell (wraps HomeScreen + SOS FAB) ──
-      home: _RootShell(toggleTheme: toggleTheme, setLocale: setLocale),
+      // ── Light theme ─────────────────────────
+      theme: ThemeData(
+        brightness:              Brightness.light,
+        useMaterial3:            true,
+        fontFamily:              appFontFamily,
+        primaryColor:            violet,
+        scaffoldBackgroundColor: lBg,
+        cardColor:               lSurface,
+        textTheme:               ThemeData.light().textTheme,
+        colorScheme: const ColorScheme.light(
+          primary:   violet,
+          secondary: violetLight,
+          surface:   lSurface,
+          onSurface: Color(0xFF0A0A20),
+        ),
+        pageTransitionsTheme: const PageTransitionsTheme(builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS:     CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux:   FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS:   CupertinoPageTransitionsBuilder(),
+        }),
+      ),
+
+      home: SplashScreen(toggleTheme: toggleTheme, setLocale: setLocale),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// _RootShell
-// Wraps HomeScreen with the persistent SOS floating button and initialises
-// EmergencyService (shake detection + context) after the first frame.
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─────────────────────────────────────────────
+//  ROOT SHELL
+// ─────────────────────────────────────────────
 class _RootShell extends StatefulWidget {
   final VoidCallback toggleTheme;
   final Function(Locale) setLocale;
-
-  const _RootShell({
-    required this.toggleTheme,
-    required this.setLocale,
-  });
-
+  const _RootShell({required this.toggleTheme, required this.setLocale});
   @override
   State<_RootShell> createState() => _RootShellState();
 }
@@ -122,7 +138,6 @@ class _RootShellState extends State<_RootShell> {
   @override
   void initState() {
     super.initState();
-    // Init after first frame so context is fully available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       EmergencyService.instance.init(context);
     });
@@ -131,16 +146,14 @@ class _RootShellState extends State<_RootShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // HomeScreen provides its own Scaffold — this outer one
-      // exists only to host the persistent SOS FAB across all routes.
       backgroundColor: Colors.transparent,
       body: HomeScreen(
         toggleTheme: widget.toggleTheme,
-        setLocale: widget.setLocale,
+        setLocale:   widget.setLocale,
       ),
       floatingActionButton: SOSFloatingButton(
         toggleTheme: widget.toggleTheme,
-        setLocale: widget.setLocale,
+        setLocale:   widget.setLocale,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
